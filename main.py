@@ -1,34 +1,65 @@
 #!/usr/bin/env python3
 """
-Smartclip AI - Aplikasi AI untuk analisis dan editing video YouTube secara otomatis
-Fitur: Auto-detect moment terbaik, face tracking, speaker identification, 
-       subtitle otomatis, watermark, dan podcast mode split
+Smartclip AI - Smart Launcher
+Otomatis memilih versi berdasarkan dependencies yang tersedia
 """
 
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-import customtkinter as ctk
-import threading
-import os
 import sys
+import importlib.util
+import os
 from pathlib import Path
-import queue
-import time
-from datetime import datetime
 
-# Import modules lokal
-sys.path.append(str(Path(__file__).parent))
-from config import *
-from modules.youtube_downloader import YouTubeDownloader
-from modules.video_analyzer import VideoAnalyzer
-from modules.face_tracker import FaceTracker
-from modules.speaker_diarization import SpeakerDiarization
-from modules.subtitle_generator import SubtitleGenerator
-from modules.video_editor import VideoEditor
-from modules.utils import Utils
+def check_package(package_name):
+    """Check apakah package tersedia"""
+    try:
+        spec = importlib.util.find_spec(package_name)
+        return spec is not None
+    except:
+        return False
+
+def print_startup_banner():
+    """Print startup banner"""
+    print("🎬" + "=" * 58 + "🎬")
+    print("                    SMARTCLIP AI")
+    print("        AI-Powered YouTube Video Processor")
+    print("🎬" + "=" * 58 + "🎬")
+    print()
+
+def check_ai_dependencies():
+    """Check AI dependencies availability"""
+    print("🔍 Checking AI dependencies...")
+    
+    # Critical AI packages untuk full functionality
+    critical_packages = [
+        ('torch', 'PyTorch (Deep Learning)'),
+        ('whisper', 'OpenAI Whisper (Speech Recognition)'),
+        ('face_recognition', 'Face Recognition'),
+        ('cv2', 'OpenCV (Computer Vision)')
+    ]
+try:
+    from modules.youtube_downloader import YouTubeDownloader
+    print("YouTubeDownloader imported")
+    from modules.video_analyzer import VideoAnalyzer
+    print("VideoAnalyzer imported") 
+    from modules.face_tracker import FaceTracker
+    print("FaceTracker imported")
+    from modules.speaker_diarization import SpeakerDiarization
+    print("SpeakerDiarization imported")
+    from modules.subtitle_generator import SubtitleGenerator  
+    print("SubtitleGenerator imported")
+    from modules.video_editor import VideoEditor
+    print("VideoEditor imported")
+    from modules.utils import Utils
+    print("Utils imported")
+except ImportError as e:
+    print(f"Error importing modules: {e}")
+    messagebox.showerror("Import Error", f"Failed to import required modules: {e}")
+    sys.exit(1)
 
 class SmartclipAI:
     def __init__(self):
+        print("Initializing SmartclipAI...")
+        
         # Setup main window
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
@@ -43,16 +74,38 @@ class SmartclipAI:
         self.is_processing = False
         self.current_progress = 0
         
-        # Initialize modules
-        self.youtube_dl = YouTubeDownloader()
-        self.video_analyzer = VideoAnalyzer()
-        self.face_tracker = FaceTracker()
-        self.speaker_diarization = SpeakerDiarization()
-        self.subtitle_generator = SubtitleGenerator()
-        self.video_editor = VideoEditor()
-        self.utils = Utils()
+        # Initialize modules dengan error handling
+        print("Initializing modules...")
+        try:
+            self.youtube_dl = YouTubeDownloader()
+            print("✓ YouTubeDownloader initialized")
+            
+            self.video_analyzer = VideoAnalyzer()
+            print("✓ VideoAnalyzer initialized")
+            
+            self.face_tracker = FaceTracker()
+            print("✓ FaceTracker initialized")
+            
+            self.speaker_diarization = SpeakerDiarization()
+            print("✓ SpeakerDiarization initialized")
+            
+            self.subtitle_generator = SubtitleGenerator()
+            print("✓ SubtitleGenerator initialized")
+            
+            self.video_editor = VideoEditor()
+            print("✓ VideoEditor initialized")
+            
+            self.utils = Utils()
+            print("✓ Utils initialized")
+            
+        except Exception as e:
+            print(f"Error initializing modules: {e}")
+            messagebox.showerror("Initialization Error", f"Failed to initialize modules: {e}")
+            raise
         
+        print("Setting up UI...")
         self.setup_ui()
+        print("SmartclipAI initialized successfully!")
         
     def setup_ui(self):
         """Setup user interface"""
@@ -236,4 +289,437 @@ class SmartclipAI:
         dir_button_frame = ctk.CTkFrame(dir_frame)
         dir_button_frame.pack(fill="x", padx=10, pady=(0, 10))
         
-        self.output_dir_var = tk.StringVar(value=str(OUTPUT_DIR))\n        self.output_dir_entry = ctk.CTkEntry(\n            dir_button_frame, \n            textvariable=self.output_dir_var,\n            state=\"readonly\"\n        )\n        self.output_dir_entry.pack(side=\"left\", fill=\"x\", expand=True, padx=(0, 10))\n        \n        output_browse_button = ctk.CTkButton(\n            dir_button_frame,\n            text=\"Browse\",\n            command=self.browse_output_dir,\n            width=100\n        )\n        output_browse_button.pack(side=\"right\")\n        \n        # Quality and format settings\n        quality_frame = ctk.CTkFrame(output_frame)\n        quality_frame.pack(fill=\"x\", padx=20, pady=(0, 20))\n        \n        # Left side - Quality\n        quality_left = ctk.CTkFrame(quality_frame)\n        quality_left.pack(side=\"left\", fill=\"both\", expand=True, padx=(0, 10))\n        \n        quality_label = ctk.CTkLabel(quality_left, text=\"Kualitas Video:\")\n        quality_label.pack(anchor=\"w\", padx=10, pady=(10, 5))\n        \n        self.quality_var = tk.StringVar(value=\"720p\")\n        quality_menu = ctk.CTkOptionMenu(\n            quality_left,\n            variable=self.quality_var,\n            values=[\"480p\", \"720p\", \"1080p\", \"1440p\", \"4K\"]\n        )\n        quality_menu.pack(fill=\"x\", padx=10, pady=(0, 10))\n        \n        # Right side - Format\n        format_right = ctk.CTkFrame(quality_frame)\n        format_right.pack(side=\"right\", fill=\"both\", expand=True, padx=(10, 0))\n        \n        format_label = ctk.CTkLabel(format_right, text=\"Format Output:\")\n        format_label.pack(anchor=\"w\", padx=10, pady=(10, 5))\n        \n        self.format_var = tk.StringVar(value=\"mp4\")\n        format_menu = ctk.CTkOptionMenu(\n            format_right,\n            variable=self.format_var,\n            values=[\"mp4\", \"avi\", \"mov\", \"mkv\"]\n        )\n        format_menu.pack(fill=\"x\", padx=10, pady=(0, 10))\n        \n    def setup_progress_section(self):\n        \"\"\"Setup progress tracking section\"\"\"\n        progress_frame = ctk.CTkFrame(self.main_frame)\n        progress_frame.pack(fill=\"x\", pady=(0, 20))\n        \n        # Title\n        progress_title = ctk.CTkLabel(\n            progress_frame, \n            text=\"📊 Progress Pemrosesan\", \n            font=ctk.CTkFont(size=18, weight=\"bold\")\n        )\n        progress_title.pack(anchor=\"w\", padx=20, pady=(20, 10))\n        \n        # Progress bar\n        self.progress_var = tk.DoubleVar()\n        self.progress_bar = ctk.CTkProgressBar(\n            progress_frame,\n            variable=self.progress_var,\n            height=20\n        )\n        self.progress_bar.pack(fill=\"x\", padx=20, pady=(0, 10))\n        \n        # Progress text\n        self.progress_text = ctk.CTkLabel(\n            progress_frame,\n            text=\"Siap untuk memproses...\",\n            font=ctk.CTkFont(size=12)\n        )\n        self.progress_text.pack(anchor=\"w\", padx=20, pady=(0, 10))\n        \n        # Estimated time\n        self.time_estimate = ctk.CTkLabel(\n            progress_frame,\n            text=\"Perkiraan waktu: -\",\n            font=ctk.CTkFont(size=11),\n            text_color=\"gray70\"\n        )\n        self.time_estimate.pack(anchor=\"w\", padx=20, pady=(0, 20))\n        \n    def setup_control_buttons(self):\n        \"\"\"Setup control buttons\"\"\"\n        button_frame = ctk.CTkFrame(self.main_frame)\n        button_frame.pack(fill=\"x\", pady=(0, 20))\n        \n        # Button container\n        button_container = ctk.CTkFrame(button_frame)\n        button_container.pack(expand=True, pady=20)\n        \n        # Start processing button\n        self.start_button = ctk.CTkButton(\n            button_container,\n            text=\"🚀 Mulai Proses AI\",\n            command=self.start_processing,\n            font=ctk.CTkFont(size=16, weight=\"bold\"),\n            height=50,\n            width=200\n        )\n        self.start_button.pack(side=\"left\", padx=10)\n        \n        # Stop button\n        self.stop_button = ctk.CTkButton(\n            button_container,\n            text=\"⏹️ Stop\",\n            command=self.stop_processing,\n            font=ctk.CTkFont(size=16),\n            height=50,\n            width=120,\n            state=\"disabled\"\n        )\n        self.stop_button.pack(side=\"left\", padx=10)\n        \n        # Reset button\n        self.reset_button = ctk.CTkButton(\n            button_container,\n            text=\"🔄 Reset\",\n            command=self.reset_form,\n            font=ctk.CTkFont(size=16),\n            height=50,\n            width=120\n        )\n        self.reset_button.pack(side=\"left\", padx=10)\n        \n    def setup_status_bar(self):\n        \"\"\"Setup status bar\"\"\"\n        status_frame = ctk.CTkFrame(self.main_frame)\n        status_frame.pack(fill=\"x\", side=\"bottom\")\n        \n        self.status_text = ctk.CTkLabel(\n            status_frame,\n            text=\"✅ Siap - Masukkan URL YouTube atau pilih file video lokal\",\n            font=ctk.CTkFont(size=11),\n            anchor=\"w\"\n        )\n        self.status_text.pack(fill=\"x\", padx=20, pady=10)\n        \n    def browse_video_file(self):\n        \"\"\"Browse untuk memilih file video lokal\"\"\"\n        filetypes = [\n            (\"Video files\", \"*.mp4 *.avi *.mov *.mkv *.webm *.m4v\"),\n            (\"All files\", \"*.*\")\n        ]\n        \n        filename = filedialog.askopenfilename(\n            title=\"Pilih File Video\",\n            filetypes=filetypes\n        )\n        \n        if filename:\n            self.file_path_var.set(filename)\n            self.url_entry.delete(0, 'end')  # Clear URL if file is selected\n            self.update_status(f\"File terpilih: {Path(filename).name}\")\n            \n    def browse_output_dir(self):\n        \"\"\"Browse untuk memilih folder output\"\"\"\n        directory = filedialog.askdirectory(\n            title=\"Pilih Folder Output\",\n            initialdir=self.output_dir_var.get()\n        )\n        \n        if directory:\n            self.output_dir_var.set(directory)\n            self.update_status(f\"Folder output: {directory}\")\n            \n    def start_processing(self):\n        \"\"\"Mulai proses AI\"\"\"\n        # Validate input\n        url = self.url_entry.get().strip()\n        file_path = self.file_path_var.get().strip()\n        \n        if not url and not file_path:\n            messagebox.showerror(\"Error\", \"Masukkan URL YouTube atau pilih file video!\")\n            return\n            \n        if url and file_path:\n            messagebox.showerror(\"Error\", \"Pilih salah satu: URL YouTube atau file lokal!\")\n            return\n            \n        # Disable controls\n        self.start_button.configure(state=\"disabled\")\n        self.stop_button.configure(state=\"normal\")\n        \n        # Start processing in thread\n        self.is_processing = True\n        processing_thread = threading.Thread(\n            target=self.process_video,\n            args=(url if url else file_path, url != \"\")\n        )\n        processing_thread.daemon = True\n        processing_thread.start()\n        \n    def stop_processing(self):\n        \"\"\"Stop proses AI\"\"\"\n        self.is_processing = False\n        self.start_button.configure(state=\"normal\")\n        self.stop_button.configure(state=\"disabled\")\n        self.update_status(\"❌ Proses dihentikan oleh pengguna\")\n        self.update_progress(0, \"Proses dibatalkan\")\n        \n    def reset_form(self):\n        \"\"\"Reset form ke kondisi awal\"\"\"\n        # Clear inputs\n        self.url_entry.delete(0, 'end')\n        self.file_path_var.set(\"\")\n        \n        # Reset progress\n        self.progress_var.set(0)\n        self.progress_text.configure(text=\"Siap untuk memproses...\")\n        self.time_estimate.configure(text=\"Perkiraan waktu: -\")\n        \n        # Reset status\n        self.update_status(\"✅ Form direset - Siap untuk input baru\")\n        \n        # Enable controls\n        self.start_button.configure(state=\"normal\")\n        self.stop_button.configure(state=\"disabled\")\n        \n    def process_video(self, input_source, is_url=True):\n        \"\"\"Main processing function\"\"\"\n        try:\n            start_time = time.time()\n            \n            # Step 1: Download or load video\n            if is_url:\n                self.update_progress(10, \"📥 Mengunduh video dari YouTube...\")\n                video_path = self.youtube_dl.download(input_source)\n            else:\n                self.update_progress(10, \"📂 Memuat file video...\")\n                video_path = input_source\n                \n            if not video_path or not self.is_processing:\n                return\n                \n            # Step 2: Analyze video for best moments\n            if self.detect_moments.get():\n                self.update_progress(25, \"🎯 Menganalisis moment terbaik dengan AI...\")\n                moments = self.video_analyzer.analyze_video(video_path)\n            else:\n                moments = None\n                \n            if not self.is_processing:\n                return\n                \n            # Step 3: Face tracking\n            face_data = None\n            if self.face_tracking.get():\n                self.update_progress(40, \"👤 Melakukan face tracking...\")\n                face_data = self.face_tracker.track_faces(video_path)\n                \n            if not self.is_processing:\n                return\n                \n            # Step 4: Speaker diarization\n            speaker_data = None\n            if self.speaker_detection.get():\n                self.update_progress(55, \"🎙️ Mengidentifikasi pembicara...\")\n                speaker_data = self.speaker_diarization.identify_speakers(video_path)\n                \n            if not self.is_processing:\n                return\n                \n            # Step 5: Generate subtitles\n            subtitle_data = None\n            if self.auto_subtitle.get():\n                self.update_progress(70, \"📝 Menggenerate subtitle otomatis...\")\n                subtitle_data = self.subtitle_generator.generate_subtitles(video_path)\n                \n            if not self.is_processing:\n                return\n                \n            # Step 6: Video editing and output\n            self.update_progress(85, \"🎬 Mengedit dan memproses video final...\")\n            \n            output_options = {\n                'moments': moments,\n                'face_data': face_data,\n                'speaker_data': speaker_data,\n                'subtitle_data': subtitle_data,\n                'add_watermark': self.add_watermark.get(),\n                'podcast_mode': self.podcast_mode.get(),\n                'quality': self.quality_var.get(),\n                'format': self.format_var.get(),\n                'output_dir': self.output_dir_var.get()\n            }\n            \n            output_files = self.video_editor.process_video(video_path, output_options)\n            \n            if not self.is_processing:\n                return\n                \n            # Step 7: Cleanup and finish\n            self.update_progress(100, \"✅ Proses selesai!\")\n            \n            end_time = time.time()\n            total_time = end_time - start_time\n            \n            # Show completion message\n            self.show_completion_dialog(output_files, total_time)\n            \n        except Exception as e:\n            if self.is_processing:\n                self.update_status(f\"❌ Error: {str(e)}\")\n                messagebox.showerror(\"Error\", f\"Terjadi kesalahan: {str(e)}\")\n        finally:\n            # Reset controls\n            if self.is_processing:\n                self.start_button.configure(state=\"normal\")\n                self.stop_button.configure(state=\"disabled\")\n                self.is_processing = False\n                \n    def update_progress(self, percentage, message):\n        \"\"\"Update progress bar dan message\"\"\"\n        self.root.after(0, lambda: self._update_progress_ui(percentage, message))\n        \n    def _update_progress_ui(self, percentage, message):\n        \"\"\"Update UI progress (run in main thread)\"\"\"\n        self.progress_var.set(percentage / 100.0)\n        self.progress_text.configure(text=message)\n        \n        # Update time estimate\n        if percentage > 0 and hasattr(self, 'process_start_time'):\n            elapsed = time.time() - self.process_start_time\n            estimated_total = elapsed / (percentage / 100.0)\n            remaining = estimated_total - elapsed\n            \n            if remaining > 0:\n                remaining_str = self.utils.format_duration(remaining)\n                self.time_estimate.configure(text=f\"Perkiraan waktu tersisa: {remaining_str}\")\n            else:\n                self.time_estimate.configure(text=\"Hampir selesai...\")\n        \n    def update_status(self, message):\n        \"\"\"Update status bar\"\"\"\n        self.root.after(0, lambda: self.status_text.configure(text=message))\n        \n    def show_completion_dialog(self, output_files, processing_time):\n        \"\"\"Show completion dialog\"\"\"\n        time_str = self.utils.format_duration(processing_time)\n        \n        message = f\"🎉 Proses selesai dalam {time_str}!\\n\\n\"\n        message += \"File output yang dihasilkan:\\n\"\n        \n        for file_path in output_files:\n            message += f\"• {Path(file_path).name}\\n\"\n            \n        message += f\"\\nLokasi: {self.output_dir_var.get()}\"\n        \n        result = messagebox.showinfo(\n            \"Proses Selesai\", \n            message\n        )\n        \n        # Ask if want to open output folder\n        if messagebox.askyesno(\"Buka Folder\", \"Ingin membuka folder output?\"):\n            self.utils.open_folder(self.output_dir_var.get())\n            \n    def run(self):\n        \"\"\"Run the application\"\"\"\n        # Set process start time\n        self.process_start_time = time.time()\n        \n        # Start main loop\n        self.root.mainloop()\n\ndef main():\n    \"\"\"Main function\"\"\"\n    try:\n        app = SmartclipAI()\n        app.run()\n    except Exception as e:\n        print(f\"Error starting application: {e}\")\n        messagebox.showerror(\"Startup Error\", f\"Gagal memulai aplikasi: {str(e)}\")\n\nif __name__ == \"__main__\":\n    main()
+        self.output_dir_var = tk.StringVar(value=str(OUTPUT_DIR))
+        self.output_dir_entry = ctk.CTkEntry(
+            dir_button_frame, 
+            textvariable=self.output_dir_var,
+            state="readonly"
+        )
+        self.output_dir_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        
+        output_browse_button = ctk.CTkButton(
+            dir_button_frame,
+            text="Browse",
+            command=self.browse_output_dir,
+            width=100
+        )
+        output_browse_button.pack(side="right")
+        
+        # Quality and format settings
+        quality_frame = ctk.CTkFrame(output_frame)
+        quality_frame.pack(fill="x", padx=20, pady=(0, 20))
+        
+        # Left side - Quality
+        quality_left = ctk.CTkFrame(quality_frame)
+        quality_left.pack(side="left", fill="both", expand=True, padx=(0, 10))
+        
+        quality_label = ctk.CTkLabel(quality_left, text="Kualitas Video:")
+        quality_label.pack(anchor="w", padx=10, pady=(10, 5))
+        
+        self.quality_var = tk.StringVar(value="720p")
+        quality_menu = ctk.CTkOptionMenu(
+            quality_left,
+            variable=self.quality_var,
+            values=["480p", "720p", "1080p", "1440p", "4K"]
+        )
+        quality_menu.pack(fill="x", padx=10, pady=(0, 10))
+        
+        # Right side - Format
+        format_right = ctk.CTkFrame(quality_frame)
+        format_right.pack(side="right", fill="both", expand=True, padx=(10, 0))
+        
+        format_label = ctk.CTkLabel(format_right, text="Format Output:")
+        format_label.pack(anchor="w", padx=10, pady=(10, 5))
+        
+        self.format_var = tk.StringVar(value="mp4")
+        format_menu = ctk.CTkOptionMenu(
+            format_right,
+            variable=self.format_var,
+            values=["mp4", "avi", "mov", "mkv"]
+        )
+        format_menu.pack(fill="x", padx=10, pady=(0, 10))
+        
+    def setup_progress_section(self):
+        """Setup progress tracking section"""
+        progress_frame = ctk.CTkFrame(self.main_frame)
+        progress_frame.pack(fill="x", pady=(0, 20))
+        
+        # Title
+        progress_title = ctk.CTkLabel(
+            progress_frame, 
+            text="📊 Progress Pemrosesan", 
+            font=ctk.CTkFont(size=18, weight="bold")
+        )
+        progress_title.pack(anchor="w", padx=20, pady=(20, 10))
+        
+        # Progress bar
+        self.progress_var = tk.DoubleVar()
+        self.progress_bar = ctk.CTkProgressBar(
+            progress_frame,
+            variable=self.progress_var,
+            height=20
+        )
+        self.progress_bar.pack(fill="x", padx=20, pady=(0, 10))
+        
+        # Progress text
+        self.progress_text = ctk.CTkLabel(
+            progress_frame,
+            text="Siap untuk memproses...",
+            font=ctk.CTkFont(size=12)
+        )
+        self.progress_text.pack(anchor="w", padx=20, pady=(0, 10))
+        
+        # Estimated time
+        self.time_estimate = ctk.CTkLabel(
+            progress_frame,
+            text="Perkiraan waktu: -",
+            font=ctk.CTkFont(size=11),
+            text_color="gray70"
+        )
+        self.time_estimate.pack(anchor="w", padx=20, pady=(0, 20))
+        
+    def setup_control_buttons(self):
+        """Setup control buttons"""
+        button_frame = ctk.CTkFrame(self.main_frame)
+        button_frame.pack(fill="x", pady=(0, 20))
+        
+        # Button container
+        button_container = ctk.CTkFrame(button_frame)
+        button_container.pack(expand=True, pady=20)
+        
+        # Start processing button
+        self.start_button = ctk.CTkButton(
+            button_container,
+            text="🚀 Mulai Proses AI",
+            command=self.start_processing,
+            font=ctk.CTkFont(size=16, weight="bold"),
+            height=50,
+            width=200
+        )
+        self.start_button.pack(side="left", padx=10)
+        
+        # Stop button
+        self.stop_button = ctk.CTkButton(
+            button_container,
+            text="⏹️ Stop",
+            command=self.stop_processing,
+            font=ctk.CTkFont(size=16),
+            height=50,
+            width=120,
+            state="disabled"
+        )
+        self.stop_button.pack(side="left", padx=10)
+        
+        # Reset button
+        self.reset_button = ctk.CTkButton(
+            button_container,
+            text="🔄 Reset",
+            command=self.reset_form,
+            font=ctk.CTkFont(size=16),
+            height=50,
+            width=120
+        )
+        self.reset_button.pack(side="left", padx=10)
+        
+    def setup_status_bar(self):
+        """Setup status bar"""
+        status_frame = ctk.CTkFrame(self.main_frame)
+        status_frame.pack(fill="x", side="bottom")
+        
+        self.status_text = ctk.CTkLabel(
+            status_frame,
+            text="✅ Siap - Masukkan URL YouTube atau pilih file video lokal",
+            font=ctk.CTkFont(size=11),
+            anchor="w"
+        )
+        self.status_text.pack(fill="x", padx=20, pady=10)
+        
+    def browse_video_file(self):
+        """Browse untuk memilih file video lokal"""
+        filetypes = [
+            ("Video files", "*.mp4 *.avi *.mov *.mkv *.webm *.m4v"),
+            ("All files", "*.*")
+        ]
+        
+        filename = filedialog.askopenfilename(
+            title="Pilih File Video",
+            filetypes=filetypes
+        )
+        
+        if filename:
+            self.file_path_var.set(filename)
+            self.url_entry.delete(0, 'end')  # Clear URL if file is selected
+            self.update_status(f"File terpilih: {Path(filename).name}")
+            
+    def browse_output_dir(self):
+        """Browse untuk memilih folder output"""
+        directory = filedialog.askdirectory(
+            title="Pilih Folder Output",
+            initialdir=self.output_dir_var.get()
+        )
+        
+        if directory:
+            self.output_dir_var.set(directory)
+            self.update_status(f"Folder output: {directory}")
+            
+    def start_processing(self):
+        """Mulai proses AI"""
+        # Validate input
+        url = self.url_entry.get().strip()
+        file_path = self.file_path_var.get().strip()
+        
+        if not url and not file_path:
+            messagebox.showerror("Error", "Masukkan URL YouTube atau pilih file video!")
+            return
+            
+        if url and file_path:
+            messagebox.showerror("Error", "Pilih salah satu: URL YouTube atau file lokal!")
+            return
+            
+        # Disable controls
+        self.start_button.configure(state="disabled")
+        self.stop_button.configure(state="normal")
+        
+        # Start processing in thread
+        self.is_processing = True
+        processing_thread = threading.Thread(
+            target=self.process_video,
+            args=(url if url else file_path, url != "")
+        )
+        processing_thread.daemon = True
+        processing_thread.start()
+        
+    def stop_processing(self):
+        """Stop proses AI"""
+        self.is_processing = False
+        self.start_button.configure(state="normal")
+        self.stop_button.configure(state="disabled")
+        self.update_status("❌ Proses dihentikan oleh pengguna")
+        self.update_progress(0, "Proses dibatalkan")
+        
+    def reset_form(self):
+        """Reset form ke kondisi awal"""
+        # Clear inputs
+        self.url_entry.delete(0, 'end')
+        self.file_path_var.set("")
+        
+        # Reset progress
+        self.progress_var.set(0)
+        self.progress_text.configure(text="Siap untuk memproses...")
+        self.time_estimate.configure(text="Perkiraan waktu: -")
+        
+        # Reset status
+        self.update_status("✅ Form direset - Siap untuk input baru")
+        
+        # Enable controls
+        self.start_button.configure(state="normal")
+        self.stop_button.configure(state="disabled")
+        
+    def process_video(self, input_source, is_url=True):
+        """Main processing function"""
+        try:
+            start_time = time.time()
+            
+            # Step 1: Download or load video
+            if is_url:
+                self.update_progress(10, "📥 Mengunduh video dari YouTube...")
+                try:
+                    video_path = self.youtube_dl.download(input_source)
+                except Exception as e:
+                    self.update_status(f"Error downloading: {e}")
+                    return
+            else:
+                self.update_progress(10, "📂 Memuat file video...")
+                video_path = input_source
+                
+            if not video_path or not self.is_processing:
+                return
+                
+            # Step 2: Analyze video for best moments
+            moments = None
+            if self.detect_moments.get():
+                self.update_progress(25, "🎯 Menganalisis moment terbaik dengan AI...")
+                try:
+                    moments = self.video_analyzer.analyze_video(video_path)
+                except Exception as e:
+                    self.update_status(f"Warning: Video analysis failed - {e}")
+                    moments = None
+                
+            if not self.is_processing:
+                return
+                
+            # Step 3: Face tracking
+            face_data = None
+            if self.face_tracking.get():
+                self.update_progress(40, "👤 Melakukan face tracking...")
+                try:
+                    face_data = self.face_tracker.track_faces(video_path)
+                except Exception as e:
+                    self.update_status(f"Warning: Face tracking failed - {e}")
+                    face_data = None
+                
+            if not self.is_processing:
+                return
+                
+            # Step 4: Speaker diarization
+            speaker_data = None
+            if self.speaker_detection.get():
+                self.update_progress(55, "🎙️ Mengidentifikasi pembicara...")
+                try:
+                    speaker_data = self.speaker_diarization.identify_speakers(video_path)
+                except Exception as e:
+                    self.update_status(f"Warning: Speaker diarization failed - {e}")
+                    speaker_data = None
+                
+            if not self.is_processing:
+                return
+                
+            # Step 5: Generate subtitles
+            subtitle_data = None
+            if self.auto_subtitle.get():
+                self.update_progress(70, "📝 Menggenerate subtitle otomatis...")
+                try:
+                    subtitle_data = self.subtitle_generator.generate_subtitles(video_path)
+                except Exception as e:
+                    self.update_status(f"Warning: Subtitle generation failed - {e}")
+                    subtitle_data = None
+                
+            if not self.is_processing:
+                return
+                
+            # Step 6: Video editing and output
+            self.update_progress(85, "🎬 Mengedit dan memproses video final...")
+            
+            output_options = {
+                'moments': moments,
+                'face_data': face_data,
+                'speaker_data': speaker_data,
+                'subtitle_data': subtitle_data,
+                'add_watermark': self.add_watermark.get(),
+                'podcast_mode': self.podcast_mode.get(),
+                'quality': self.quality_var.get(),
+                'format': self.format_var.get(),
+                'output_dir': self.output_dir_var.get()
+            }
+            
+            try:
+                output_files = self.video_editor.process_video(video_path, output_options)
+            except Exception as e:
+                self.update_status(f"Error in video editing: {e}")
+                output_files = []
+            
+            if not self.is_processing:
+                return
+                
+            # Step 7: Cleanup and finish
+            self.update_progress(100, "✅ Proses selesai!")
+            
+            end_time = time.time()
+            total_time = end_time - start_time
+            
+            # Show completion message
+            self.show_completion_dialog(output_files, total_time)
+            
+        except Exception as e:
+            if self.is_processing:
+                self.update_status(f"❌ Error: {str(e)}")
+                messagebox.showerror("Error", f"Terjadi kesalahan: {str(e)}")
+                print(f"Detailed error: {e}")  # For debugging
+                import traceback
+                traceback.print_exc()
+        finally:
+            # Reset controls
+            if self.is_processing:
+                self.start_button.configure(state="normal")
+                self.stop_button.configure(state="disabled")
+                self.is_processing = False
+                
+    def update_progress(self, percentage, message):
+        """Update progress bar dan message"""
+        self.root.after(0, lambda: self._update_progress_ui(percentage, message))
+        
+    def _update_progress_ui(self, percentage, message):
+        """Update UI progress (run in main thread)"""
+        self.progress_var.set(percentage / 100.0)
+        self.progress_text.configure(text=message)
+        
+        # Update time estimate
+        if percentage > 0 and hasattr(self, 'process_start_time'):
+            elapsed = time.time() - self.process_start_time
+            estimated_total = elapsed / (percentage / 100.0)
+            remaining = estimated_total - elapsed
+            
+            if remaining > 0:
+                try:
+                    remaining_str = self.utils.format_duration(remaining)
+                    self.time_estimate.configure(text=f"Perkiraan waktu tersisa: {remaining_str}")
+                except:
+                    self.time_estimate.configure(text="Menghitung...")
+            else:
+                self.time_estimate.configure(text="Hampir selesai...")
+        
+    def update_status(self, message):
+        """Update status bar"""
+        self.root.after(0, lambda: self.status_text.configure(text=message))
+        
+    def show_completion_dialog(self, output_files, processing_time):
+        """Show completion dialog"""
+        try:
+            time_str = self.utils.format_duration(processing_time)
+        except:
+            time_str = f"{processing_time:.1f} seconds"
+        
+        message = f"🎉 Proses selesai dalam {time_str}!\n\n"
+        message += "File output yang dihasilkan:\n"
+        
+        if output_files:
+            for file_path in output_files:
+                message += f"• {Path(file_path).name}\n"
+        else:
+            message += "• Video processing completed\n"
+            
+        message += f"\nLokasi: {self.output_dir_var.get()}"
+        
+        messagebox.showinfo("Proses Selesai", message)
+        
+        # Ask if want to open output folder
+        if messagebox.askyesno("Buka Folder", "Ingin membuka folder output?"):
+            try:
+                self.utils.open_folder(self.output_dir_var.get())
+            except:
+                # Fallback for opening folder
+                import subprocess
+                import platform
+                if platform.system() == "Windows":
+                    subprocess.Popen(f'explorer "{self.output_dir_var.get()}"')
+                elif platform.system() == "Darwin":  # macOS
+                    subprocess.Popen(["open", self.output_dir_var.get()])
+                else:  # Linux
+                    subprocess.Popen(["xdg-open", self.output_dir_var.get()])
+            
+    def run(self):
+        """Run the application"""
+        # Set process start time
+        self.process_start_time = time.time()
+        
+        # Start main loop
+        self.root.mainloop()
+
+def main():
+    """Main function"""
+    try:
+        print("Starting Smartclip AI...")
+        app = SmartclipAI()
+        print("Application initialized successfully")
+        app.run()
+    except Exception as e:
+        print(f"Error starting application: {e}")
+        import traceback
+        traceback.print_exc()
+        try:
+            messagebox.showerror("Startup Error", f"Gagal memulai aplikasi: {str(e)}")
+        except:
+            print("Failed to show error dialog")
+
+if __name__ == "__main__":
+    main()
